@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="/Users/DiegoJones/Downloads/stores.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="3228"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="customers" custom_title="0" dock_id="1" table="4,9:maincustomers"/><dock_state state="000000ff00000000fd000000010000000200000314000002a9fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000000003140000011f00ffffff000003140000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="customers" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="122"/><column index="2" value="175"/><column index="3" value="123"/><column index="4" value="124"/><column index="5" value="104"/><column index="6" value="161"/><column index="7" value="131"/><column index="8" value="102"/><column index="9" value="71"/><column index="10" value="82"/><column index="11" value="73"/><column index="12" value="183"/><column index="13" value="79"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="Customer &amp; Product Analysis.sql*" filename="/Users/DiegoJones/Documents/dataquest SQL/Projects/Customer &amp; Product Analysis.sql">-- Reference to file &quot;/Users/DiegoJones/Documents/dataquest SQL/Projects/Customer &amp; Product Analysis.sql&quot; (not supported by this version) --</sql><sql name="Question 1">-- Question 1: Which products should we order more of or less of? --
+
+--the first CTE finds the top 10 low stock products, identifying them by productCode--
+WITH lowStock AS(
+SELECT p.productCode,
+                  CASE
+							 WHEN p.quantityInStock = 0 THEN NULL
+				                ELSE SUM(od.quantityOrdered)/p.quantityInStock 
+				  END AS lowStock
+     FROM products AS p
+	   JOIN orderdetails AS od
+	        ON p.productCode = od.productCode
+	GROUP BY p.productCode
+ HAVING SUM(od.quantityOrdered)/p.quantityInStock  &gt; 0
+    ORDER BY lowStock DESC
+	 LIMIT 10
+	  /*A result greater than 0 would indicate that the product has been ordered, 
+and the ratio of ordered quantity to available stock is greater than 0. 
+This suggests that the product is likely low in stock, as there's a demand for it */
+),
+
+--the 2nd CTE computes the product performance for the top 10 performing products --
+product_performance AS(
+SELECT  productCode, SUM(quantityOrdered * priceEach) as product_performance
+    FROM orderdetails
+  GROUP BY productCode
+HAVING SUM(quantityOrdered * priceEach) &gt; 0
+   ORDER BY product_performance DESC
+    LIMIT 10
+)
+
+--combines the CTES identifying any top 10 low stock item that is a top 10 performing item --
+SELECT ls.productCode, ls.lowStock
+	FROM lowStock AS ls
+WHERE ls.productCode IN(SELECT productCode FROM product_performance);
+</sql><sql name="Question 2">-- Question 2: How Should We Match Marketing and Communication Strategies to Customer Behaviors? --
+
+--the following CTE query computes how much profit each customer generates--
+WITH customerProfit AS (
+SELECT o.customerNumber, 
+				 SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+	  JOIN orderdetails AS od
+	       ON p.productCode = od.productCode
+	  JOIN orders AS o
+	      ON  od.orderNumber = o.orderNumber
+   GROUP BY o.customerNumber
+   )
+   -- the following query uses the CTE query to find the top 5 VIP customers-- 
+ SELECT c.contactLastName, c.contactFirstName, c.city, c.country, cp.profit
+     FROM customers AS c
+	   JOIN customerProfit AS cp
+	        ON c.customerNumber = cp.customerNumber
+	ORDER BY cp.profit DESC --switch DESC with ASC to find bottom 5 least engaged customers--
+	 LIMIT 5;</sql><sql name="Question 3">-- Question 3: How Much Can We Spend on Acquiring New Customers? --
+
+--the following commenred query returns the LTV of all customer profits, which represents the average amount of money a customer generates--
+
+/* SELECT AVG(profit) AS LTV --Customer Lifetime Value--
+   FROM ( SELECT  SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+					   FROM products AS p
+	                    JOIN orderdetails AS od
+	                         ON p.productCode = od.productCode				  
+   ) */
+   
+ -- CTE query computes how much profit each customer generates --
+WITH customerProfit AS (
+SELECT o.customerNumber, 
+				 SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+	  JOIN orderdetails AS od
+	       ON p.productCode = od.productCode
+	  JOIN orders AS o
+	      ON  od.orderNumber = o.orderNumber
+   GROUP BY o.customerNumber
+   ),
+   
+-- CTE query to find the top 5 VIP customers-- 
+ vipCustomers AS (
+ SELECT c.contactLastName, c.contactFirstName, c.city, c.country, cp.profit
+     FROM customers AS c
+	   JOIN customerProfit AS cp
+	        ON c.customerNumber = cp.customerNumber
+	ORDER BY cp.profit DESC --switch DESC with ASC to find bottom 5 least engaged customers--
+	 LIMIT 5
+)
+
+--returns LTV of just VIP customers--
+SELECT AVG(profit) AS LTV --Customer Lifetime Value--
+   FROM customerProfit
+  /*We use the LTV of only the VIP customers because they represent the most valuable and profitable segment, 
+  allowing us to estimate the maximum amount that can be spent on acquiring new customers who have similar potential. 
+  By focusing on VIP customers, we can set a more realistic and ambitious target for customer acquisition costs.
+
+  
+
+</sql><sql name="Conclusion">/* Conclusion with answers to questions
+
+Q1) Which products should we order more of or less of?
+
+	Vintage cars and motorcycles are the priority for restocking as the data shows they sell very frequently and are also
+	the highest performing products.
+
+Q2) How should we match marketing and communication straegies to customer behaviors?
+
+	Since VIP customers and lesser engaged customers have been identifed, detrmining how to drive loyalty and attract
+	more customers is simple. 
+
+	For VIP customers, the strategy should be to build on their existing loyalty by using highly personalized 
+	communications and giving these customers certain exclusive benefits. VIP customers should be approached
+	in a way that leaves them feeling appreciated and encourages them to continue their high level of engagement.
+
+	For the lesser engaged customers, the focus should be on education and re-engagement. This can be done through
+	clear and accessible messaging that emphasizes the benefits of the companies offerings, possibly with incentives
+	or offers to encourage renewed interest in the company. By analyzing behavior patterns trust can be built and 
+	these customers will gradually shift towwards a more engaged relationship with the company.
+	
+Q3) How much can we spend on acquiring new customers?
+	
+	The LTV value for the VIPS was 39039.5943877551, the LTV tells us how much profit an average customer generates
+	during their lifetime with the company. We can use this to predict future profits, so, if 10 new customers are acquired
+	we predict $390,395 will be earned. We can decide based upon this prediction how much to spend on acquirning new 
+	customers. 
+	
+	*/</sql><current_tab id="3"/></tab_sql></sqlb_project>
