@@ -2,7 +2,7 @@ Project: Customer and Product Analysis using SQL
 Author: DIEGO JONES
 Date Completed: March 18th, 2025
 
-Download Project file "Customer Product Analysis.sqbpro" preferably should be opened and accessed on "DB Browser for SQLite" which can be downloaded at the following link:
+Download raw project file "Customer Product Analysis.sqbpro" preferably should be opened and accessed on "DB Browser for SQLite" which can be downloaded at the following link:
 
 https://sqlitebrowser.org/dl/ 
 
