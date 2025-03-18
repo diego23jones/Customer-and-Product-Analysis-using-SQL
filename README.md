@@ -2,7 +2,11 @@ Project: Customer and Product Analysis using SQL
 Author: DIEGO JONES
 Date Completed: March 18th, 2025
 
-Project file "Customer Product Analysis.sqbpro" preferably should be accessed on "DB Browser for SQLite" simply click "Open Project" in DB Browser and select project file
+Download Project file "Customer Product Analysis.sqbpro" preferably should be opened and accessed on "DB Browser for SQLite" which can be downloaded at the following link:
+
+https://sqlitebrowser.org/dl/ 
+
+Once DB browser is opened simply click "Open Project" in DB Browser and select project file
 
 The goal of this project is to analyze data from a sales records database for scale model cars and extract information for decision-making. 
 The specific questions I intended to answer were:
